@@ -1,0 +1,167 @@
+{
+  "info": {
+    "name": "Workforce Marketplace API",
+    "_postman_id": "2a0c2f89-2f95-4f2d-84de-1f9afab8bba2",
+    "description": "Collection for auth, jobs, and applications endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "EMPLOYER_TOKEN", "value": "" },
+    { "key": "WORKER_TOKEN", "value": "" },
+    { "key": "jobId", "value": "" },
+    { "key": "applicationId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Employer Register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/employer/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"employer@example.com\",\n  \"password\": \"Secret123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Employer Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/employer/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"employer@example.com\",\n  \"password\": \"Secret123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Worker Register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/worker/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"worker@example.com\",\n  \"password\": \"Secret123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Worker Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/worker/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"worker@example.com\",\n  \"password\": \"Secret123\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Employer Jobs",
+      "item": [
+        {
+          "name": "Create Job",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{EMPLOYER_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/employer/jobs",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Catering Helper\",\n  \"description\": \"Lunch shift\",\n  \"location\": \"City Center\",\n  \"scheduledDate\": \"2026-05-01\",\n  \"paymentAmount\": 700,\n  \"requiredWorkers\": 2\n}"
+            }
+          }
+        },
+        {
+          "name": "List Jobs",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{EMPLOYER_TOKEN}}" }],
+            "url": "{{baseUrl}}/employer/jobs?page=1&limit=10"
+          }
+        },
+        {
+          "name": "Get Job By Id",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{EMPLOYER_TOKEN}}" }],
+            "url": "{{baseUrl}}/employer/jobs/{{jobId}}"
+          }
+        },
+        {
+          "name": "Update Job",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{EMPLOYER_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/employer/jobs/{{jobId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"location\": \"Updated Location\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Applications",
+      "item": [
+        {
+          "name": "Apply To Job",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{WORKER_TOKEN}}" }],
+            "url": "{{baseUrl}}/worker/jobs/{{jobId}}/applications"
+          }
+        },
+        {
+          "name": "Worker Application List",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{WORKER_TOKEN}}" }],
+            "url": "{{baseUrl}}/worker/applications?page=1&limit=10"
+          }
+        },
+        {
+          "name": "Employer Job Applications",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{EMPLOYER_TOKEN}}" }],
+            "url": "{{baseUrl}}/employer/jobs/{{jobId}}/applications?page=1&limit=10"
+          }
+        },
+        {
+          "name": "Confirm Application",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{EMPLOYER_TOKEN}}" }],
+            "url": "{{baseUrl}}/employer/jobs/{{jobId}}/applications/{{applicationId}}/confirm"
+          }
+        },
+        {
+          "name": "Reject Application",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{EMPLOYER_TOKEN}}" }],
+            "url": "{{baseUrl}}/employer/jobs/{{jobId}}/applications/{{applicationId}}/reject"
+          }
+        }
+      ]
+    }
+  ]
+}
+
