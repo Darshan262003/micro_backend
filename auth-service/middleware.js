@@ -1,0 +1,58 @@
+const jwt = require('jsonwebtoken');
+const { config } = require('./config');
+
+function authenticate(req, res, next) {
+  const header = req.headers.authorization;
+  if (!header || !header.startsWith('Bearer ')) {
+    return next(Object.assign(new Error('Authorization header with Bearer token required'), { status: 401 }));
+  }
+  const token = header.slice('Bearer '.length).trim();
+  try {
+    const payload = jwt.verify(token, config.jwtSecret);
+    if (!payload.id || !payload.role) {
+      return next(Object.assign(new Error('Invalid token payload'), { status: 401 }));
+    }
+    req.user = { id: payload.id, role: payload.role };
+    next();
+  } catch {
+    next(Object.assign(new Error('Invalid or expired token'), { status: 401 }));
+  }
+}
+
+function requireRole(...allowedRoles) {
+  return function roleMiddleware(req, res, next) {
+    if (!req.user) return next(Object.assign(new Error('Unauthorized'), { status: 401 }));
+    if (!allowedRoles.includes(req.user.role)) {
+      return next(Object.assign(new Error('Forbidden'), { status: 403 }));
+    }
+    next();
+  };
+}
+
+const requireEmployer = requireRole('employer');
+const requireWorker = requireRole('worker');
+
+function notFound(req, res, next) {
+  next(Object.assign(new Error('Not Found'), { status: 404 }));
+}
+
+function errorHandler(err, req, res, next) {
+  let statusCode = err.status || err.statusCode || 500;
+  let message = err.message || 'Internal Server Error';
+  if (err.code === 11000) {
+    statusCode = 409;
+    message = 'Email already registered';
+  }
+  if (statusCode === 500 && process.env.NODE_ENV === 'production') {
+    message = 'Internal Server Error';
+  }
+  res.status(statusCode).json({ message, statusCode });
+}
+
+module.exports = {
+  authenticate,
+  requireEmployer,
+  requireWorker,
+  notFound,
+  errorHandler,
+};

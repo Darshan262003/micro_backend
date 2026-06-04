@@ -58,9 +58,13 @@ async function applyToJob(workerId, jobId) {
     .lean()
     .exec();
   if (!worker) throw notFoundError('User not found');
-  if (worker.role !== 'worker') throw forbiddenError('Forbidden');
+  if (worker.role !== 'worker') {
+    throw forbiddenError('Only worker accounts can apply to jobs. Sign in with a worker account.');
+  }
   if (!worker.profileCompleted) {
-    throw badRequestError('Complete your profile before applying');
+    throw badRequestError(
+      'Complete your profile before applying. Add your name, age, mobile number, and address.'
+    );
   }
 
   const job = await Job.findById(jobId).lean().exec();
@@ -98,13 +102,33 @@ async function listMyApplications(workerId, query = {}) {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
+      .populate({ path: 'jobId', select: 'title description location scheduledDate status paymentAmount' })
       .lean()
       .exec(),
     Application.countDocuments(filters).exec(),
   ]);
 
+  const data = items.map((item) => {
+    const populated = item.jobId && typeof item.jobId === 'object' ? item.jobId : null;
+    return {
+      ...item,
+      jobId: populated ? populated._id : item.jobId,
+      job: populated
+        ? {
+            id: populated._id,
+            title: populated.title,
+            description: populated.description || '',
+            location: populated.location || '',
+            scheduledDate: populated.scheduledDate,
+            status: populated.status,
+            paymentAmount: populated.paymentAmount,
+          }
+        : null,
+    };
+  });
+
   return {
-    data: items,
+    data,
     pagination: {
       page,
       limit,
@@ -133,7 +157,7 @@ async function listApplicationsForEmployerJob(employerId, jobId, query = {}) {
       .limit(limit)
       .populate({
         path: 'workerId',
-        select: 'email role name age mobileNumber address profilePic',
+        select: 'email role name age mobileNumber address caste profilePic',
       })
       .lean()
       .exec(),
@@ -151,6 +175,7 @@ async function listApplicationsForEmployerJob(employerId, jobId, query = {}) {
           age: item.workerId.age || null,
           mobileNumber: item.workerId.mobileNumber || '',
           address: item.workerId.address || '',
+          caste: item.workerId.caste || '',
           profilePic: item.workerId.profilePic || '',
         }
       : null,
