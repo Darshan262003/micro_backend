@@ -31,13 +31,13 @@ app.get('/health', (req, res) => {
 app.use(notFound);
 app.use(errorHandler);
 
+app.listen(config.port, () => console.log(`auth-service on ${config.port}`));
+
 mongoose
   .connect(config.mongoUri, { serverSelectionTimeoutMS: 8000 })
-  .then(() => {
-    app.listen(config.port, () => console.log(`auth-service on ${config.port}`));
-  })
+  .then(() => console.log('auth-service: MongoDB connected'))
   .catch((err) => {
     console.error('auth-service: MongoDB connection failed:', err.message);
-    console.error('Check MONGO_URI in auth-service/.env and Atlas Network Access (IP whitelist).');
+    console.error('Check MONGO_URI and Atlas Network Access (allow 0.0.0.0/0).');
     process.exit(1);
   });

@@ -134,11 +134,11 @@ app.get('/health', (req, res) => {
 app.use(notFound);
 app.use(errorHandler);
 
+app.listen(config.port, () => console.log(`user-service on ${config.port}`));
+
 mongoose
   .connect(config.mongoUri, { serverSelectionTimeoutMS: 8000 })
-  .then(() => {
-    app.listen(config.port, () => console.log(`user-service on ${config.port}`));
-  })
+  .then(() => console.log('user-service: MongoDB connected'))
   .catch((err) => {
     console.error('user-service: MongoDB connection failed:', err.message);
     process.exit(1);

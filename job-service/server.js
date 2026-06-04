@@ -66,10 +66,12 @@ app.get('/health', (req, res) => {
 app.use(notFound);
 app.use(errorHandler);
 
+app.listen(config.port, () => console.log(`job-service on ${config.port}`));
+
 mongoose
   .connect(config.mongoUri, { serverSelectionTimeoutMS: 8000 })
   .then(() => {
-    app.listen(config.port, () => console.log(`job-service on ${config.port}`));
+    console.log('job-service: MongoDB connected');
 
     const runCleanup = async () => {
       try {
