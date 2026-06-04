@@ -26,8 +26,8 @@ function proxyWithPrefix(prefix, target) {
   return createProxyMiddleware({
     target,
     changeOrigin: true,
-    // pathRewrite: (path) => `${prefix}${path}`,
-    pathRewrite: (path) => path,
+    pathRewrite: (path) => `${prefix}${path}`,
+    // pathRewrite: (path) => path,
     proxyTimeout: 15000,
     on: {
       error(err, req, res) {
