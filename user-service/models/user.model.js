@@ -16,6 +16,8 @@ const userSchema = new mongoose.Schema(
     caste: { type: String, trim: true, default: '' },
     profilePic: { type: String, trim: true, default: '' },
     profileCompleted: { type: Boolean, default: false },
+    fcmToken: { type: String, trim: true, default: '' },
+    lastLoginAt: { type: Date, default: null },
     notificationPreferences: {
       type: {
         JOB_POSTED: { type: Boolean, default: true },

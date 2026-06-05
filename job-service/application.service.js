@@ -4,15 +4,12 @@ const { Application } = require('./models/application.model');
 const { Job } = require('./models/job.model');
 const { config } = require('./config');
 const notificationService = require('./notification.service');
+const notificationDelivery = require('./notification.delivery');
 
 function forbiddenError(message = 'Forbidden') { return Object.assign(new Error(message), { status: 403 }); }
 function notFoundError(message = 'Not Found') { return Object.assign(new Error(message), { status: 404 }); }
 function badRequestError(message) { return Object.assign(new Error(message), { status: 400 }); }
-function shouldSendNotification(user, type) {
-  if (!user || typeof user !== 'object') return true;
-  const prefs = user.notificationPreferences || {};
-  return prefs[type] !== false;
-}
+const { shouldSendNotification } = notificationDelivery;
 
 function normalizePagination(rawPage, rawLimit) {
   const hasPage = rawPage !== undefined;
@@ -200,7 +197,7 @@ async function confirmApplication(employerId, jobId, applicationId) {
   try {
     const worker = await getUser(updatedApp.workerId).catch(() => null);
     if (shouldSendNotification(worker, 'APPLICATION_CONFIRMED')) {
-      await notificationService.createNotification({
+      await notificationDelivery.deliverApplicationStatusNotification({
         recipientId: updatedApp.workerId,
         recipientRole: 'worker',
         type: 'APPLICATION_CONFIRMED',
@@ -209,7 +206,7 @@ async function confirmApplication(employerId, jobId, applicationId) {
         jobId: updatedJob._id,
         applicationId: updatedApp._id,
         actorId: employerId,
-      });
+      }, worker);
     }
   } catch (e) {
     console.error('job-service: confirmApplication notification failed:', e.message);
@@ -232,7 +229,7 @@ async function rejectApplication(employerId, jobId, applicationId) {
   try {
     const worker = await getUser(updatedApp.workerId).catch(() => null);
     if (shouldSendNotification(worker, 'APPLICATION_REJECTED')) {
-      await notificationService.createNotification({
+      await notificationDelivery.deliverApplicationStatusNotification({
         recipientId: updatedApp.workerId,
         recipientRole: 'worker',
         type: 'APPLICATION_REJECTED',
@@ -241,7 +238,7 @@ async function rejectApplication(employerId, jobId, applicationId) {
         jobId: job._id,
         applicationId: updatedApp._id,
         actorId: employerId,
-      });
+      }, worker);
     }
   } catch (e) {
     console.error('job-service: rejectApplication notification failed:', e.message);

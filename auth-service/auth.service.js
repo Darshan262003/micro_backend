@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const { User } = require('./models/user.model');
 const { config } = require('./config');
+const { touchLastLogin } = require('./user.client');
 
 function signToken(user) {
   const payload = { id: user._id.toString(), role: user.role };
@@ -22,6 +23,7 @@ async function register(email, password, role) {
     if (err.code === 11000) throw Object.assign(new Error('Email already registered'), { status: 409 });
     throw err;
   }
+  await touchLastLogin(user._id.toString());
   return toAuthResponse(user, signToken(user));
 }
 
@@ -31,6 +33,7 @@ async function login(email, password, expectedRole) {
   if (user.role !== expectedRole) throw Object.assign(new Error('Invalid email or password'), { status: 401 });
   const ok = await user.comparePassword(password);
   if (!ok) throw Object.assign(new Error('Invalid email or password'), { status: 401 });
+  await touchLastLogin(user._id.toString());
   return toAuthResponse(user, signToken(user));
 }
 

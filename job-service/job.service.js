@@ -1,8 +1,6 @@
 const mongoose = require('mongoose');
-const axios = require('axios');
 const { Job } = require('./models/job.model');
-const { config } = require('./config');
-const notificationService = require('./notification.service');
+const notificationDelivery = require('./notification.delivery');
 
 function notFoundError() {
   return Object.assign(new Error('Job not found'), { status: 404 });
@@ -54,25 +52,7 @@ async function createJob(employerId, payload) {
   await job.save();
 
   try {
-    const { data } = await axios.get(`${config.userServiceUrl}/internal/users/role/worker/ids`, {
-      params: { type: 'JOB_POSTED' },
-      timeout: 5000,
-    });
-    const workerIds = Array.isArray(data?.data) ? data.data : [];
-
-    await Promise.all(
-      workerIds.map((workerId) =>
-        notificationService.createNotification({
-          recipientId: workerId,
-          recipientRole: 'worker',
-          type: 'JOB_POSTED',
-          title: `New job posted: ${job.title}`,
-          message: `${job.title} is now open. Tap to apply.`,
-          jobId: job._id,
-          actorId: employerId,
-        })
-      )
-    );
+    await notificationDelivery.deliverJobPostedNotifications(job, employerId);
   } catch (e) {
     console.error('job-service: createJob notification failed:', e.message);
   }

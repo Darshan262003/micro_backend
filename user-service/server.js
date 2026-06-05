@@ -10,7 +10,7 @@ app.use(express.json());
 
 app.get('/user/profile', authenticate, async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id).select('-password').lean().exec();
+    const user = await User.findById(req.user.id).select('-password -fcmToken').lean().exec();
     if (!user) throw Object.assign(new Error('User not found'), { status: 404 });
     res.status(200).json(user);
   } catch (e) { next(e); }
@@ -28,7 +28,7 @@ app.put('/user/profile', authenticate, validateProfileUpdate, async (req, res, n
     if (payload.caste !== undefined) user.caste = payload.caste != null ? String(payload.caste).trim() : '';
     if (payload.profilePic !== undefined) user.profilePic = payload.profilePic != null ? String(payload.profilePic).trim() : '';
     await user.save();
-    const updated = await User.findById(req.user.id).select('-password').lean().exec();
+    const updated = await User.findById(req.user.id).select('-password -fcmToken').lean().exec();
     res.status(200).json(updated);
   } catch (e) { next(e); }
 });
@@ -45,6 +45,22 @@ app.get('/user/notification-preferences', authenticate, async (req, res, next) =
         APPLICATION_REJECTED: true,
       },
     });
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.post('/user/fcm-token', authenticate, async (req, res, next) => {
+  try {
+    const fcmToken = req.body?.fcmToken;
+    if (!fcmToken || typeof fcmToken !== 'string' || !fcmToken.trim()) {
+      throw Object.assign(new Error('fcmToken is required'), { status: 400 });
+    }
+    const user = await User.findById(req.user.id);
+    if (!user) throw Object.assign(new Error('User not found'), { status: 404 });
+    user.fcmToken = fcmToken.trim();
+    await user.save();
+    res.status(200).json({ message: 'FCM token updated' });
   } catch (e) {
     next(e);
   }
@@ -86,6 +102,49 @@ app.put('/user/notification-preferences', authenticate, async (req, res, next) =
 });
 
 // Internal endpoints for cross-service calls (job-service)
+app.patch('/internal/users/:id/last-login', async (req, res, next) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid user id', statusCode: 400 });
+    }
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { $set: { lastLoginAt: new Date() } },
+      { new: true }
+    ).select('_id lastLoginAt').lean().exec();
+    if (!user) throw Object.assign(new Error('User not found'), { status: 404 });
+    res.status(200).json(user);
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.get('/internal/users/role/:role/push-targets', async (req, res, next) => {
+  try {
+    const role = String(req.params.role || '').trim();
+    if (!['worker', 'employer'].includes(role)) {
+      return res.status(400).json({ message: 'role must be employer or worker', statusCode: 400 });
+    }
+    const type = req.query.type ? String(req.query.type).trim() : null;
+    const allowedTypes = ['JOB_POSTED', 'JOB_APPLIED', 'APPLICATION_CONFIRMED', 'APPLICATION_REJECTED'];
+    if (!type || !allowedTypes.includes(type)) {
+      return res.status(400).json({ message: 'type query param is required and must be a valid notification type', statusCode: 400 });
+    }
+
+    const filters = {
+      role,
+      lastLoginAt: { $ne: null },
+      fcmToken: { $exists: true, $nin: [null, ''] },
+      [`notificationPreferences.${type}`]: { $ne: false },
+    };
+
+    const users = await User.find(filters).select('_id fcmToken').lean().exec();
+    res.status(200).json({ data: users });
+  } catch (e) {
+    next(e);
+  }
+});
+
 app.get('/internal/users/role/:role/ids', async (req, res, next) => {
   try {
     const role = String(req.params.role || '').trim();
