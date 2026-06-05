@@ -16,6 +16,13 @@ function authenticate(req, res, next) {
   }
 }
 
+function requireAdmin(req, res, next) {
+  if (!req.user || req.user.role !== 'admin') {
+    return next(Object.assign(new Error('Forbidden'), { status: 403 }));
+  }
+  next();
+}
+
 function notFound(req, res, next) {
   next(Object.assign(new Error('Not Found'), { status: 404 }));
 }
@@ -27,4 +34,4 @@ function errorHandler(err, req, res, next) {
   res.status(statusCode).json({ message, statusCode });
 }
 
-module.exports = { authenticate, notFound, errorHandler };
+module.exports = { authenticate, requireAdmin, notFound, errorHandler };

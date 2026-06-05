@@ -49,6 +49,7 @@ function proxyWithPrefix(prefix, target) {
 }
 
 app.use('/auth', proxyWithPrefix('/auth', AUTH));
+app.use('/admin', proxyWithPrefix('/admin', USER));
 app.use('/user', proxyWithPrefix('/user', USER));
 app.use('/employer', proxyWithPrefix('/employer', JOB));
 app.use('/worker', proxyWithPrefix('/worker', JOB));

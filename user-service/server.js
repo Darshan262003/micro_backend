@@ -2,7 +2,8 @@ const express = require('express');
 const mongoose = require('mongoose');
 const { config } = require('./config');
 const { User } = require('./models/user.model');
-const { authenticate, notFound, errorHandler } = require('./middleware');
+const { authenticate, requireAdmin, notFound, errorHandler } = require('./middleware');
+const adminService = require('./admin.service');
 const { validateProfileUpdate } = require('./user.validator');
 
 const app = express();
@@ -97,6 +98,32 @@ app.put('/user/notification-preferences', authenticate, async (req, res, next) =
     await user.save();
 
     res.status(200).json({ notificationPreferences: user.notificationPreferences });
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.use('/admin', authenticate, requireAdmin);
+
+app.get('/admin/stats', async (req, res, next) => {
+  try {
+    res.status(200).json(await adminService.getStats());
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.get('/admin/employers', async (req, res, next) => {
+  try {
+    res.status(200).json(await adminService.listUsersByRole('employer', req.query));
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.get('/admin/workers', async (req, res, next) => {
+  try {
+    res.status(200).json(await adminService.listUsersByRole('worker', req.query));
   } catch (e) {
     next(e);
   }

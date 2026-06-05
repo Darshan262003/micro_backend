@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const { config } = require('./config');
 const { register, login } = require('./auth.service');
+const { adminLogin } = require('./admin.auth');
 const { validateRegister, validateLogin } = require('./auth.validator');
 const { authenticate, requireEmployer, requireWorker, notFound, errorHandler } = require('./middleware');
 
@@ -19,6 +20,9 @@ app.post('/auth/employer/login', validateLogin, async (req, res, next) => {
 });
 app.post('/auth/worker/login', validateLogin, async (req, res, next) => {
   try { res.status(200).json(await login(req.body.email, req.body.password, 'worker')); } catch (e) { next(e); }
+});
+app.post('/auth/admin/login', validateLogin, async (req, res, next) => {
+  try { res.status(200).json(await adminLogin(req.body.email, req.body.password)); } catch (e) { next(e); }
 });
 app.get('/auth/me', authenticate, (req, res) => res.status(200).json({ user: req.user }));
 app.get('/auth/employer/ping', authenticate, requireEmployer, (req, res) => res.status(200).json({ message: 'Employer access granted', user: req.user }));
