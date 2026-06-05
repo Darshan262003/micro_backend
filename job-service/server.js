@@ -6,6 +6,7 @@ const { validateCreateJob, validateUpdateJob, validateJobIdParam, validateApplic
 const jobService = require('./job.service');
 const appService = require('./application.service');
 const notificationService = require('./notification.service');
+const fcmService = require('./fcm.service');
 
 const app = express();
 app.use(express.json());
@@ -60,7 +61,12 @@ app.patch('/worker/notifications/read-all', async (req, res, next) => {
 
 app.get('/health', (req, res) => {
   const db = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
-  res.status(200).json({ status: 'OK', db, uptime: process.uptime() });
+  res.status(200).json({
+    status: 'OK',
+    db,
+    fcm: fcmService.isEnabled() ? 'enabled' : 'disabled',
+    uptime: process.uptime(),
+  });
 });
 
 app.use(notFound);

@@ -16,7 +16,10 @@ function shouldSendNotification(user, type) {
 }
 
 async function sendPushToWorker(worker, notificationDoc) {
-  if (!worker?.fcmToken || !String(worker.fcmToken).trim()) return;
+  if (!worker?.fcmToken || !String(worker.fcmToken).trim()) {
+    console.warn(`job-service: FCM skipped for user ${worker?._id || 'unknown'} — no fcmToken saved`);
+    return;
+  }
 
   const type = notificationDoc.type;
   const targetRoute = TARGET_ROUTES[type] || '/worker/notifications';
@@ -72,6 +75,14 @@ async function deliverJobPostedNotifications(job, employerId) {
       { params: { type: 'JOB_POSTED' }, timeout: 10000 }
     );
     const targets = Array.isArray(pushData?.data) ? pushData.data : [];
+    if (!targets.length) {
+      console.warn(
+        'job-service: JOB_POSTED FCM — 0 push targets (workers need fcmToken + lastLoginAt + JOB_POSTED pref). ' +
+          'Ensure frontend calls POST /user/fcm-token after login.'
+      );
+    } else {
+      console.log(`job-service: JOB_POSTED FCM — sending to ${targets.length} worker(s)`);
+    }
     const notificationsByRecipient = new Map(
       notifications.map((doc) => [String(doc.recipientId), doc])
     );

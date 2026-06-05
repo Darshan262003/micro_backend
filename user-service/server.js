@@ -59,6 +59,7 @@ app.post('/user/fcm-token', authenticate, async (req, res, next) => {
     const user = await User.findById(req.user.id);
     if (!user) throw Object.assign(new Error('User not found'), { status: 404 });
     user.fcmToken = fcmToken.trim();
+    if (!user.lastLoginAt) user.lastLoginAt = new Date();
     await user.save();
     res.status(200).json({ message: 'FCM token updated' });
   } catch (e) {
